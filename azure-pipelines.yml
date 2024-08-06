@@ -1,0 +1,35 @@
+# azure-pipelines.yml
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- script: |
+    python -m venv venv
+    source venv/bin/activate
+    pip install -r requirements.txt
+  displayName: 'Install dependencies'
+
+- task: Docker@2
+  inputs:
+    command: 'buildAndPush'
+    repository: 'your-dockerhub-username/flask-app'
+    dockerfile: '**/Dockerfile'
+    tags: '$(Build.BuildId)'
+    containerRegistry: 'your-container-registry-service-connection'
+
+- task: Kubernetes@1
+  inputs:
+    connectionType: 'Azure Resource Manager'
+    azureSubscription: 'your-subscription'
+    azureResourceGroup: 'your-resource-group'
+    kubernetesCluster: 'your-aks-cluster'
+    command: 'apply'
+    arguments: '-f deployment.yaml'
